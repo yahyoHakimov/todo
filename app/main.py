@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import models
 from app.database import engine
 from app.routers import auth, tasks
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -30,11 +33,11 @@ app.include_router(tasks.router)
 # Root endpoint
 @app.get("/")
 def root():
-    return {
-        "message": "Welcome to To-Do List API",
-        "docs": "/docs",
-        "version": "1.0.0"
-    }
+    return FileResponse('frontend/index.html')
+
+
+if os.path.exists('frontend'):
+    app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 # Health check
 @app.get("/health")

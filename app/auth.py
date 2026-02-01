@@ -8,30 +8,36 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
 import os
+import hashlib
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Environment variables
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # OAuth2 scheme for token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
-# ========== PASSWORD FUNCTIONS ==========
+# ========== PASSWORD FUNCTIONS (FIXED) ==========
 
 def hash_password(password: str) -> str:
-    """Plain password → Hashed password"""
-    return pwd_context.hash(password)
+    """Plain password → SHA256 → bcrypt hash"""
+    # Truncate password to 72 bytes first (bcrypt limit)
+    password_truncated = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    # Hash with bcrypt
+    return pwd_context.hash(password_truncated)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Check password"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password"""
+    # Truncate password to 72 bytes first
+    password_truncated = plain_password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    # Verify with bcrypt
+    return pwd_context.verify(password_truncated, hashed_password)
 
 # ========== JWT TOKEN FUNCTIONS ==========
 
